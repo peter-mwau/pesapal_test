@@ -1,0 +1,229 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model - Stores user info from Clerk authentication
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique // Clerk user ID
+  email         String    @unique
+  firstName     String?
+  lastName      String?
+  profileImage  String?
+  phone         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  cartItems     CartItem[]
+  orders        Order[]
+  reviews       Review[]
+  wishlist      WishlistItem[]
+
+  @@index([clerkId])
+}
+
+// Category Model
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  description String?
+  image     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relations
+  products  Product[]
+
+  @@index([slug])
+}
+
+// Product Model
+model Product {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  description String?   @db.LongText
+  price       Float
+  image       String
+  images      String?   @db.LongText // JSON array of images
+  stock       Int       @default(0)
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId  String
+  rating      Float     @default(0)
+  ratingCount Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  reviews     Review[]
+  wishlistItems WishlistItem[]
+
+  @@index([categoryId])
+  @@index([slug])
+}
+
+// Cart Item Model
+model CartItem {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  quantity  Int       @default(1)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+// Order Model
+model Order {
+  id              String      @id @default(cuid())
+  orderNumber     String      @unique
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+  status          OrderStatus @default(PENDING)
+  totalAmount     Float
+  shippingAddress String      @db.LongText
+  billingAddress  String?     @db.LongText
+  shippingMethod  String?
+  shippingCost    Float       @default(0)
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  items           OrderItem[]
+  payment         Payment?
+  shipment        Shipment?
+
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+}
+
+// Order Item Model
+model OrderItem {
+  id        String    @id @default(cuid())
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product   @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Int
+  price     Float     // Price at time of purchase
+  createdAt DateTime  @default(now())
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// Payment Model
+model Payment {
+  id            String        @id @default(cuid())
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId       String        @unique
+  amount        Float
+  status        PaymentStatus @default(PENDING)
+  paymentMethod String        // e.g., "credit_card", "paypal", "pesapal"
+  transactionId String?       @unique // Payment processor transaction ID
+  errorMessage  String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([transactionId])
+}
+
+// Shipment Model
+model Shipment {
+  id            String        @id @default(cuid())
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId       String        @unique
+  trackingNumber String?      @unique
+  status        ShipmentStatus @default(PENDING)
+  carrier       String?
+  estimatedDelivery DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([orderId])
+  @@index([trackingNumber])
+}
+
+// Review Model
+model Review {
+  id        String    @id @default(cuid())
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  rating    Int       // 1-5
+  comment   String?   @db.LongText
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([productId, userId])
+  @@index([productId])
+  @@index([userId])
+}
+
+// Wishlist Item Model
+model WishlistItem {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+}
+
+// Enums
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum ShipmentStatus {
+  PENDING
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+}
