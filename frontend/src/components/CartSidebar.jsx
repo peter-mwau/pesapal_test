@@ -6,6 +6,11 @@ function CartSidebar({ isOpen, onClose }) {
   const { cartItems, removeFromCart, updateQuantity, totalPrice, clearCart } =
     useContext(CartContext);
 
+  const handleCheckout = () => {
+    // Placeholder for checkout logic
+    alert("Proceeding to checkout for this amount: $" + totalPrice.toFixed(2));
+  };
+
   return (
     <>
       {/* Overlay */}
@@ -138,7 +143,10 @@ function CartSidebar({ isOpen, onClose }) {
               </div>
 
               {/* Buttons */}
-              <button className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-colors">
+              <button
+                onClick={handleCheckout}
+                className="w-full bg-blue-500 text-white font-semibold py-3 rounded-lg hover:bg-blue-600 transition-colors"
+              >
                 Checkout
               </button>
 
