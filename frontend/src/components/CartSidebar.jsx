@@ -1,14 +1,16 @@
 import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { X, Trash2, Plus, Minus } from "lucide-react";
 import { CartContext } from "../contexts/cartContext";
 
 function CartSidebar({ isOpen, onClose }) {
   const { cartItems, removeFromCart, updateQuantity, totalPrice, clearCart } =
     useContext(CartContext);
+  const navigate = useNavigate();
 
   const handleCheckout = () => {
-    // Placeholder for checkout logic
-    alert("Proceeding to checkout for this amount: $" + totalPrice.toFixed(2));
+    onClose(); // Close the cart sidebar
+    navigate("/checkout"); // Navigate to checkout page
   };
 
   return (

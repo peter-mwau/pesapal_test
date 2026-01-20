@@ -12,6 +12,7 @@ import indexRoutes from './routes/index.js';
 import userRoutes from './routes/users.js';
 import productsRoutes from './routes/products.js';
 import authRoutes from './routes/auth.js';
+import paymentsRoutes from './routes/payments.js';
 
 dotenv.config();
 
@@ -43,6 +44,7 @@ app.use('/', indexRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productsRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
